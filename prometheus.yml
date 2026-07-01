@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'ticket-app'
+    static_configs:
+      - targets: ['ticket-app:8000']
+
+
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['ticket-db:3306']
