@@ -32,20 +32,58 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # ── Build and tag with both latest and commit SHA ──────
       - name: Build Docker image
-        run: docker build -t ${{ env.IMAGE_NAME }}:latest .
+        run: |
+          docker build \
+            -t ${{ env.IMAGE_NAME }}:latest \
+            -t ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            .
 
+      # ── Push both tags to Docker Hub ───────────────────────
       - name: Push Docker image
-        run: docker push ${{ env.IMAGE_NAME }}:latest
+        run: |
+          docker push ${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          echo "✅ Pushed latest and ${{ github.sha }}"
 
+      # ── Deploy to EC2 ──────────────────────────────────────
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          command_timeout: 5m
           script: |
             cd ~/ticket-reservation
+
+            # Pull latest code from GitHub
+            git pull origin main
+
+            # Save current image SHA for rollback reference
+            echo "${{ github.sha }}" > .last_deploy_sha
+            echo "Deploying version: ${{ github.sha }}"
+
+            # Pull new image from Docker Hub
             docker compose pull
-            docker compose down
-            docker compose up -d
+
+            # Restart only the app (zero downtime for other services)
+            docker compose up -d --no-deps app
+
+            # Wait for app to be healthy
+            echo "Waiting for app to be healthy..."
+            sleep 30
+
+            # Validate deployment
+            if curl -f http://localhost:8000/TRSApp/actuator/health; then
+              echo "✅ Deployment successful - version ${{ github.sha }}"
+            else
+              echo "❌ Health check failed - consider rolling back"
+              echo "Run: docker compose up -d with previous SHA"
+              exit 1
+            fi
+
+            # Show running containers
+            docker compose ps
