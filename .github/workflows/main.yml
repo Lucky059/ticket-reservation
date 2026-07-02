@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  IMAGE_NAME: lucky059/ticket-reservation
+  IMAGE_NAME: lucky050/ticket-reservation
 
 jobs:
   build-and-deploy:
