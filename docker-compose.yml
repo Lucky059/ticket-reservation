@@ -96,7 +96,7 @@ services:
       test: ["CMD", "wget", "--spider", "http://localhost"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 6
 
 networks:
   ticket-net:
