@@ -112,7 +112,8 @@ services:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost/TRSApp/"]
       interval: 10s
       timeout: 5s
-      retries: 40s
+      retries: 6
+      start_period: 40s
 
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:latest
