@@ -19,11 +19,13 @@ services:
       timeout: 5s
       retries: 5
 
-  mysql-exporter:
+    mysql-exporter:
     image: prom/mysqld-exporter:v0.15.1
     container_name: ticket-mysql-exporter
-    environment:
-      DATA_SOURCE_NAME: "${MYSQL_USER}:${MYSQL_PASSWORD}@(mysql:3306)/"
+    command:
+      - "--config.my-cnf=/cfg/mysql-exporter.cnf"
+    volumes:
+      - ./mysql-exporter.cnf:/cfg/mysql-exporter.cnf:ro
     ports:
       - "9104:9104"
     depends_on:
