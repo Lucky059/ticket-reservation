@@ -109,7 +109,7 @@ services:
     networks:
       - ticket-net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost/TRSApp/"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/TRSApp/"]
       interval: 10s
       timeout: 5s
       retries: 6
