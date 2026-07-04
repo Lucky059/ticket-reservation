@@ -57,36 +57,35 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          command_timeout: 5m
+          command_timeout: 10m
           script: |
+            set -e
+
+            echo "===== Go to project directory ====="
             cd ~/ticket-reservation
 
-            # Pull latest code from GitHub
+            echo "===== Pull latest code ====="
             git pull origin main
 
-            # Save current image SHA for rollback reference
-            echo "${{ github.sha }}" > .last_deploy_sha
-            echo "Deploying version: ${{ github.sha }}"
-
-            # Pull new image from Docker Hub
+            echo "===== Pull latest images ====="
             docker compose pull
 
-            # Restart only the app (zero downtime for other services)
-            docker compose up -d --no-deps app
+            echo "===== Restart full stack ====="
+            docker compose up -d
 
-            # Wait for app to be healthy
-            echo "Waiting for app to be healthy..."
-            sleep 30
+            echo "===== Wait for services ====="
+            sleep 45
 
-            # Validate deployment
-            if curl -f http://localhost:8000/TRSApp/actuator/health; then
-              echo "✅ Deployment successful - version ${{ github.sha }}"
-            else
-              echo "❌ Health check failed - consider rolling back"
-              echo "Run: docker compose up -d with previous SHA"
-              exit 1
-            fi
-
-            # Show running containers
+            echo "===== Show containers ====="
             docker compose ps
+
+            echo "===== Check app health ====="
+            curl -f http://localhost:8000/TRSApp/actuator/health
+
+            echo "===== Check Nginx route ====="
+            curl -f http://localhost/TRSApp/
+
+            echo "===== Check Prometheus ====="
+            curl -f http://localhost:9090/-/healthy
+
+            echo "✅ Deployment completed successfully"
