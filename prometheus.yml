@@ -2,15 +2,23 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'prometheus'
+  - job_name: "prometheus"
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ["localhost:9090"]
 
-  - job_name: 'ticket-app'
+  - job_name: "ticket-app"
+    metrics_path: "/TRSApp/actuator/prometheus"
     static_configs:
-      - targets: ['ticket-app:8000']
+      - targets: ["ticket-app:8000"]
 
-
-  - job_name: 'mysql'
+  - job_name: "mysql"
     static_configs:
-      - targets: ['ticket-db:3306']
+      - targets: ["ticket-mysql-exporter:9104"]
+
+  - job_name: "nginx"
+    static_configs:
+      - targets: ["ticket-nginx-exporter:9113"]
+
+  - job_name: "docker-containers"
+    static_configs:
+      - targets: ["ticket-cadvisor:8080"]
