@@ -1,4 +1,5 @@
-name: Simple CI/CD to EC2
+
+name: my-ticket app
 
 on:
   push:
@@ -15,6 +16,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -35,7 +37,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # ── Build and tag with both latest and commit SHA ──────
       - name: Build Docker image
         run: |
           docker build \
@@ -43,14 +44,12 @@ jobs:
             -t ${{ env.IMAGE_NAME }}:${{ github.sha }} \
             .
 
-      # ── Push both tags to Docker Hub ───────────────────────
       - name: Push Docker image
         run: |
           docker push ${{ env.IMAGE_NAME }}:latest
           docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
           echo "✅ Pushed latest and ${{ github.sha }}"
 
-      # ── Deploy to EC2 ──────────────────────────────────────
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -82,8 +81,21 @@ jobs:
             echo "===== Check app health ====="
             curl -f http://localhost:8000/TRSApp/actuator/health
 
-            echo "===== Check Nginx route ====="
-            curl -f http://localhost/TRSApp/
+            echo "===== Check Nginx route with retries ====="
+            for i in {1..10}; do
+              if curl -f http://localhost/TRSApp/; then
+                echo "✅ Nginx route is working"
+                break
+              fi
+
+              echo "Nginx not ready yet, retrying in 10 seconds..."
+              sleep 10
+
+              if [ "$i" -eq 10 ]; then
+                echo "❌ Nginx route failed after retries"
+                exit 1
+              fi
+            done
 
             echo "===== Check Prometheus ====="
             curl -f http://localhost:9090/-/healthy
